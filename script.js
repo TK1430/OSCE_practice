@@ -7,18 +7,18 @@
 
   const CSV_PATH = './data.csv';
 
-  // 大分類バッジ用カラーパレット（清潔感のある医療系トーン）
+  // 大分類ごとの識別カラー（淡い背景・高コントラスト文字・ドット色）
   const CATEGORY_PALETTE = [
-    { bg: '#e8f1fe', fg: '#1552a8', border: '#c5dcfa', dot: '#2570db' }, // ブルー
-    { bg: '#f0ecfe', fg: '#5332a8', border: '#d8cdfc', dot: '#7353d4' }, // インディゴ
-    { bg: '#e5f6f3', fg: '#0d6b5e', border: '#bce6de', dot: '#149684' }, // ティール
-    { bg: '#fef3e2', fg: '#9a5409', border: '#f8dbb0', dot: '#d98218' }, // アンバー
-    { bg: '#fdebf0', fg: '#a1254c', border: '#f6cad7', dot: '#d64572' }, // ローズ
-    { bg: '#e6f5fb', fg: '#0c6385', border: '#bde2f2', dot: '#188ec0' }, // スカイ
-    { bg: '#eaf6ea', fg: '#1e6e2b', border: '#c3e6c6', dot: '#349944' }, // グリーン
-    { bg: '#f6ecfa', fg: '#782b94', border: '#e3c7ee', dot: '#a34bc4' }, // パープル
-    { bg: '#fceee6', fg: '#9e3e15', border: '#f5d0bc', dot: '#d96230' }, // コーラル
-    { bg: '#edf2f7', fg: '#334a63', border: '#cdd9e5', dot: '#54708f' }, // スレート
+    { bg: '#eef4fc', fg: '#144d9e', dot: '#1d66cf' }, // ブルー
+    { bg: '#f2effc', fg: '#4f309e', dot: '#6e4ec9' }, // インディゴ
+    { bg: '#eaf6f3', fg: '#0d6659', dot: '#148f7d' }, // ティール
+    { bg: '#fcf4e8', fg: '#8f4f08', dot: '#cc7a16' }, // アンバー
+    { bg: '#fbeef2', fg: '#992448', dot: '#cc3f6b' }, // ローズ
+    { bg: '#ebf5fa', fg: '#0c5e7d', dot: '#1685b5' }, // スカイ
+    { bg: '#edf6ee', fg: '#1d6629', dot: '#2f8f3f' }, // グリーン
+    { bg: '#f6eef9', fg: '#71288c', dot: '#9b44bd' }, // パープル
+    { bg: '#fbf0ea', fg: '#943a14', dot: '#cc5b2b' }, // コーラル
+    { bg: '#eff3f7', fg: '#32485e', dot: '#516c8a' }, // スレート
   ];
 
   /* ========================================================================
@@ -45,7 +45,7 @@
     categoryChips: document.getElementById('category-chips'),
     excludeToggle: document.getElementById('exclude-toggle'),
     resetBtn: document.getElementById('reset-btn'),
-    drawnCount: document.getElementById('drawn-count'),
+    resetBtnLabel: document.getElementById('reset-btn-label'),
     drawOneBtn: document.getElementById('draw-one-btn'),
     drawFiveBtn: document.getElementById('draw-five-btn'),
     noticeBanner: document.getElementById('notice-banner'),
@@ -60,7 +60,6 @@
     shuffleProgressBar: document.getElementById('shuffle-progress-bar'),
     resultsWrapper: document.getElementById('results-wrapper'),
     resultsHeading: document.getElementById('results-heading'),
-    resultsMeta: document.getElementById('results-meta'),
     resultList: document.getElementById('result-list'),
   };
 
@@ -155,7 +154,6 @@
       const item = (row[2] ?? '').trim();
       const checklist = (row[3] ?? '').trim();
 
-      // 大分類・小分類・項目がすべて空の行は無視
       if (!major && !minor && !item) {
         continue;
       }
@@ -180,13 +178,11 @@
     if (index < CATEGORY_PALETTE.length) {
       return CATEGORY_PALETTE[index];
     }
-    // パレット数を超えた大分類が追加されても自動で識別可能な色を生成
     const hue = Math.round((index * 137.508) % 360);
     return {
-      bg: `hsl(${hue}, 70%, 95%)`,
+      bg: `hsl(${hue}, 65%, 95%)`,
       fg: `hsl(${hue}, 65%, 30%)`,
-      border: `hsl(${hue}, 55%, 82%)`,
-      dot: `hsl(${hue}, 65%, 48%)`,
+      dot: `hsl(${hue}, 60%, 46%)`,
     };
   }
 
@@ -194,12 +190,10 @@
     const color = state.categoryColors.get(major) || CATEGORY_PALETTE[0];
     element.style.setProperty('--cat-bg', color.bg);
     element.style.setProperty('--cat-fg', color.fg);
-    element.style.setProperty('--cat-border', color.border);
     element.style.setProperty('--cat-dot', color.dot);
   }
 
   /**
-   * 項目の表示用タイトルと小分類ラベルを返す
    * 項目が空欄の場合は小分類をタイトルとして扱う
    */
   function getDisplayParts(entry) {
@@ -247,9 +241,6 @@
    * 抽選ロジック
    * - 1個引き: 対象プールからランダムに1件
    * - 5個引き: 可能な限り「小分類」が重複しないように最大5件抽出
-   *   1) 小分類ごとにグループ化し、ランダムに最大5つの小分類を選んで各1件抽出
-   *   2) 小分類が5種類未満なら、未選択の残り項目からランダムに補充
-   *   3) 総数が5件未満なら残っている全件をシャッフルして返却
    */
   function drawFromPool(pool, count) {
     if (pool.length === 0) {
@@ -265,7 +256,6 @@
       return shuffleArray(pool);
     }
 
-    // 小分類ごとにグループ化
     const groups = new Map();
     for (const entry of pool) {
       const groupKey = entry.minor || `__single_${entry.id}`;
@@ -275,7 +265,6 @@
       groups.get(groupKey).push(entry);
     }
 
-    // ランダムに最大count個の小分類を選択し、各小分類から1件ずつ抽出
     const shuffledKeys = shuffleArray(Array.from(groups.keys()));
     const selectedKeys = shuffledKeys.slice(0, Math.min(count, shuffledKeys.length));
 
@@ -289,7 +278,6 @@
       pickedIds.add(chosen.id);
     }
 
-    // 5件に満たない場合は未選択の残り項目からランダムに補充
     if (picked.length < count) {
       const remaining = pool.filter((entry) => !pickedIds.has(entry.id));
       const shuffledRemaining = shuffleArray(remaining);
@@ -314,17 +302,16 @@
       ? state.allItems.filter((item) => !state.drawnIds.has(item.id)).length
       : state.allItems.length;
 
-    // 「すべて」チップ
     const allBtn = document.createElement('button');
     allBtn.type = 'button';
-    allBtn.className = `filter-chip filter-chip--all${isAllActive ? ' is-active' : ''}`;
+    allBtn.className = `filter-item filter-item--all${isAllActive ? ' is-active' : ''}`;
     allBtn.setAttribute('aria-pressed', String(isAllActive));
     allBtn.disabled = state.isSpinning;
 
     const allLabel = document.createElement('span');
     allLabel.textContent = 'すべて';
     const allCountSpan = document.createElement('span');
-    allCountSpan.className = 'chip-count';
+    allCountSpan.className = 'item-count';
     allCountSpan.textContent = String(allCount);
     allBtn.append(allLabel, allCountSpan);
 
@@ -335,7 +322,6 @@
     });
     dom.categoryChips.appendChild(allBtn);
 
-    // 各大分類チップ
     for (const category of state.categories) {
       const isSelected = state.selectedCategories.has(category);
       const categoryItems = state.allItems.filter((item) => item.major === category);
@@ -345,20 +331,20 @@
 
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = `filter-chip${isSelected ? ' is-active' : ''}`;
+      btn.className = `filter-item${isSelected ? ' is-active' : ''}`;
       btn.setAttribute('aria-pressed', String(isSelected));
       btn.disabled = state.isSpinning;
       applyCategoryStyle(btn, category);
 
       const dot = document.createElement('span');
-      dot.className = 'chip-dot';
+      dot.className = 'item-dot';
       dot.setAttribute('aria-hidden', 'true');
 
       const label = document.createElement('span');
       label.textContent = category;
 
       const countSpan = document.createElement('span');
-      countSpan.className = 'chip-count';
+      countSpan.className = 'item-count';
       countSpan.textContent = String(count);
 
       btn.append(dot, label, countSpan);
@@ -369,7 +355,6 @@
           state.selectedCategories.delete(category);
         } else {
           state.selectedCategories.add(category);
-          // 全大分類が個別に選ばれたら「すべて」と同等に正規化
           if (state.selectedCategories.size === state.categories.length) {
             state.selectedCategories.clear();
           }
@@ -408,11 +393,10 @@
     const available = getAvailableItems();
     const drawnTotal = state.drawnIds.size;
 
-    // 残り対象件数バッジの更新
+    // 残り対象件数の更新
     dom.remainingBadge.textContent = '';
     if (state.excludeDrawn) {
-      const mainText = document.createTextNode(`残り ${available.length}件`);
-      dom.remainingBadge.appendChild(mainText);
+      dom.remainingBadge.appendChild(document.createTextNode(`残り ${available.length}件`));
       if (available.length < filtered.length) {
         const totalSpan = document.createElement('span');
         totalSpan.className = 'remaining-total';
@@ -424,91 +408,96 @@
     }
     dom.remainingBadge.classList.toggle('is-empty', available.length === 0);
 
-    // チップ再描画
+    // 領域フィルター再描画
     renderCategoryChips();
 
     // トグル・リセットボタンの更新
     dom.excludeToggle.disabled = state.isSpinning;
     dom.resetBtn.disabled = state.isSpinning || drawnTotal === 0;
-    dom.drawnCount.textContent = String(drawnTotal);
-    dom.drawnCount.hidden = drawnTotal === 0;
+    dom.resetBtnLabel.textContent =
+      drawnTotal > 0 ? `出題済みをリセット (${drawnTotal})` : '出題済みをリセット';
 
     // 抽選ボタンの活性制御
     const canDraw = !state.isSpinning && available.length > 0;
     dom.drawOneBtn.disabled = !canDraw;
     dom.drawFiveBtn.disabled = !canDraw;
 
-    // 5個ボタンのサブ表示を残り件数に応じてわかりやすく調整
-    const multiSub = dom.drawFiveBtn.querySelector('.draw-btn-sub');
-    if (multiSub) {
-      if (available.length > 0 && available.length < 5) {
-        multiSub.textContent = `残り${available.length}件をすべて引く`;
-      } else {
-        multiSub.textContent = '小分類かぶり回避';
-      }
+    if (available.length > 0 && available.length < 5) {
+      dom.drawFiveBtn.textContent = `残り${available.length}件をまとめて引く`;
+    } else {
+      dom.drawFiveBtn.textContent = '5個まとめて引く';
     }
 
     // 全件出切り時の通知制御
     if (filtered.length > 0 && available.length === 0 && state.excludeDrawn) {
-      showNotice(
-        '選択中の領域はすべて出題済みです。リセットするか、別の領域を選んでください。',
-        { showReset: true }
-      );
+      showNotice('選択中の領域はすべて出題済みです。', { showReset: true });
     } else {
       hideNotice();
     }
   }
 
-  /**
-   * 結果カードDOMを生成する
-   */
-  function createResultCard(entry, index, totalCount) {
-    const card = document.createElement('article');
-    card.className = 'result-card';
-    card.style.animationDelay = `${index * 60}ms`;
-    applyCategoryStyle(card, entry.major);
+  function createChevronSvg() {
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(svgNS, 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('width', '16');
+    svg.setAttribute('height', '16');
+    svg.setAttribute('fill', 'none');
+    svg.setAttribute('stroke', 'currentColor');
+    svg.setAttribute('stroke-width', '2');
+    svg.setAttribute('stroke-linecap', 'round');
+    svg.setAttribute('stroke-linejoin', 'round');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.classList.add('checklist-chevron');
 
-    const body = document.createElement('div');
-    body.className = 'card-body';
+    const path = document.createElementNS(svgNS, 'path');
+    path.setAttribute('d', 'm6 9 6 6 6-6');
+    svg.appendChild(path);
+    return svg;
+  }
 
-    // 上部メタ行（大分類バッジ + 連番）
+  function createResultItem(entry, index, totalCount) {
+    const article = document.createElement('article');
+    article.className = 'result-item';
+    article.style.animationDelay = `${index * 45}ms`;
+    applyCategoryStyle(article, entry.major);
+
+    // メタ行（大分類・連番）
     const meta = document.createElement('div');
-    meta.className = 'card-meta';
+    meta.className = 'item-meta';
 
-    const badge = document.createElement('span');
-    badge.className = 'category-badge';
-    badge.textContent = entry.major;
-    applyCategoryStyle(badge, entry.major);
-    meta.appendChild(badge);
+    const tag = document.createElement('span');
+    tag.className = 'category-tag';
+    tag.textContent = entry.major;
+    applyCategoryStyle(tag, entry.major);
+    meta.appendChild(tag);
 
     if (totalCount > 1) {
       const num = document.createElement('span');
-      num.className = 'card-index';
-      num.textContent = `#${index + 1}`;
+      num.className = 'item-index';
+      num.textContent = `${index + 1} / ${totalCount}`;
       meta.appendChild(num);
     }
 
-    body.appendChild(meta);
+    article.appendChild(meta);
 
-    // 小分類 & 項目（項目が空欄なら小分類をメインタイトルに表示）
+    // 小分類・項目
     const { minorLabel, titleText } = getDisplayParts(entry);
     if (minorLabel) {
       const minorEl = document.createElement('p');
-      minorEl.className = 'card-minor';
+      minorEl.className = 'item-minor';
       minorEl.textContent = minorLabel;
-      body.appendChild(minorEl);
+      article.appendChild(minorEl);
     }
 
     const titleEl = document.createElement('h3');
-    titleEl.className = 'card-title';
+    titleEl.className = 'item-title';
     titleEl.textContent = titleText;
-    body.appendChild(titleEl);
+    article.appendChild(titleEl);
 
-    card.appendChild(body);
-
-    // 下部：答え合わせ（チェックリスト開閉）
-    const footer = document.createElement('div');
-    footer.className = 'card-footer';
+    // 答え合わせ（チェックリスト開閉）
+    const checklistArea = document.createElement('div');
+    checklistArea.className = 'item-checklist-area';
 
     const hasChecklist = entry.checklist.length > 0;
     const toggleBtn = document.createElement('button');
@@ -521,11 +510,8 @@
       toggleBtn.setAttribute('aria-controls', panelId);
 
       const labelSpan = document.createElement('span');
-      labelSpan.className = 'checklist-btn-label';
       labelSpan.textContent = '答え合わせ（チェックリストを表示）';
-
-      const chevron = createChevronSvg();
-      toggleBtn.append(labelSpan, chevron);
+      toggleBtn.append(labelSpan, createChevronSvg());
 
       const panel = document.createElement('div');
       panel.id = panelId;
@@ -551,38 +537,15 @@
           : '答え合わせ（チェックリストを表示）';
       });
 
-      footer.append(toggleBtn, panel);
+      checklistArea.append(toggleBtn, panel);
     } else {
       toggleBtn.disabled = true;
-      const labelSpan = document.createElement('span');
-      labelSpan.className = 'checklist-btn-label';
-      labelSpan.textContent = 'チェックリスト未登録';
-      toggleBtn.appendChild(labelSpan);
-      footer.appendChild(toggleBtn);
+      toggleBtn.textContent = 'チェックリスト未登録';
+      checklistArea.appendChild(toggleBtn);
     }
 
-    card.appendChild(footer);
-    return card;
-  }
-
-  function createChevronSvg() {
-    const svgNS = 'http://www.w3.org/2000/svg';
-    const svg = document.createElementNS(svgNS, 'svg');
-    svg.setAttribute('viewBox', '0 0 24 24');
-    svg.setAttribute('width', '18');
-    svg.setAttribute('height', '18');
-    svg.setAttribute('fill', 'none');
-    svg.setAttribute('stroke', 'currentColor');
-    svg.setAttribute('stroke-width', '2.2');
-    svg.setAttribute('stroke-linecap', 'round');
-    svg.setAttribute('stroke-linejoin', 'round');
-    svg.setAttribute('aria-hidden', 'true');
-    svg.classList.add('checklist-chevron');
-
-    const path = document.createElementNS(svgNS, 'path');
-    path.setAttribute('d', 'm6 9 6 6 6-6');
-    svg.appendChild(path);
-    return svg;
+    article.appendChild(checklistArea);
+    return article;
   }
 
   function renderResults(results, requestedCount) {
@@ -591,19 +554,8 @@
     dom.resultsHeading.textContent =
       requestedCount > 1 ? `抽選結果（${results.length}件）` : '抽選結果';
 
-    // 5連のとき、小分類の重複回避結果をさりげなく表示
-    if (requestedCount > 1 && results.length > 1) {
-      const uniqueMinors = new Set(results.map((r) => r.minor || r.id)).size;
-      dom.resultsMeta.textContent =
-        uniqueMinors === results.length
-          ? '小分類すべて別枠'
-          : `小分類 ${uniqueMinors}種`;
-    } else {
-      dom.resultsMeta.textContent = '';
-    }
-
     results.forEach((entry, idx) => {
-      dom.resultList.appendChild(createResultCard(entry, idx, results.length));
+      dom.resultList.appendChild(createResultItem(entry, idx, results.length));
     });
 
     dom.emptyState.hidden = true;
@@ -630,17 +582,11 @@
 
     const available = getAvailableItems();
     if (available.length === 0) {
-      showNotice(
-        '選択中の領域はすべて出題済みです。リセットするか、別の領域を選んでください。',
-        { showReset: true, pulse: true }
-      );
+      showNotice('選択中の領域はすべて出題済みです。', { showReset: true, pulse: true });
       return;
     }
 
-    // 抽選結果を確定
     const results = drawFromPool(available, requestedCount);
-
-    // 演出用プレビュー候補（残り1件のときはフィルター全体から演出すると動きが出る）
     const previewPool = available.length > 1 ? available : getFilteredItems();
 
     state.isSpinning = true;
@@ -649,14 +595,10 @@
     dom.emptyState.hidden = true;
     dom.resultsWrapper.hidden = true;
     dom.shuffleStage.hidden = false;
-    dom.shuffleStatus.textContent =
-      requestedCount > 1
-        ? `${Math.min(requestedCount, available.length)}件を抽選中...`
-        : '抽選中...';
+    dom.shuffleStatus.textContent = '抽選中...';
     dom.shuffleProgressBar.style.width = '0%';
 
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    // 約1.15秒の軽快なシャッフル演出（動きを減らす設定時は短縮）
     const tickDelays = prefersReducedMotion
       ? [120, 140]
       : [65, 65, 70, 75, 80, 85, 95, 105, 115, 130, 145, 160];
@@ -666,7 +608,6 @@
 
     const runStep = () => {
       if (step >= tickDelays.length) {
-        // 演出完了：除外モードONなら出題済みに追加
         if (state.excludeDrawn) {
           for (const entry of results) {
             state.drawnIds.add(entry.id);
@@ -678,7 +619,6 @@
         return;
       }
 
-      // 直前と同じ項目が続かないようにランダム選択
       let candidate = previewPool[Math.floor(Math.random() * previewPool.length)];
       if (previewPool.length > 1 && candidate.id === lastPreviewId) {
         candidate = previewPool[(previewPool.indexOf(candidate) + 1) % previewPool.length];
@@ -738,7 +678,6 @@
 
       state.allItems = items;
 
-      // 登場順を保って大分類リストを自動抽出
       const categorySet = new Set();
       for (const entry of items) {
         categorySet.add(entry.major);
@@ -759,7 +698,7 @@
       dom.emptyState.hidden = true;
 
       showNotice(
-        'data.csv の読み込みに失敗しました。ローカル環境の場合は簡易HTTPサーバーまたはGitHub Pages経由で開いてください。',
+        'data.csv を読み込めませんでした。HTTPサーバーまたは GitHub Pages 上で開いてください。',
         { isError: true }
       );
       console.error('CSV load error:', error);
