@@ -238,10 +238,41 @@
   }
 
   /**
+   * 小分類文字列（例: "(4) 視診", "1. 準備"）から先頭の番号を抽出する
+   */
+  function extractMinorOrder(minorText) {
+    if (!minorText) return Number.POSITIVE_INFINITY;
+    const match = minorText.match(/[（(]?\s*(\d+)\s*[）).．:：]?/);
+    return match ? Number.parseInt(match[1], 10) : Number.POSITIVE_INFINITY;
+  }
+
+  /**
+   * 複数件抽選時の表示順ソート
+   * 1. 大分類の登場順
+   * 2. 小分類のCATO番号順（番号がない場合はCSV上の登場順）
+   * 3. CSVの行順（同一小分類内での表の上から順）
+   */
+  function compareItemsForDisplay(a, b) {
+    if (a.major !== b.major) {
+      const majorDiff =
+        state.categories.indexOf(a.major) - state.categories.indexOf(b.major);
+      if (majorDiff !== 0) return majorDiff;
+    }
+
+    const numA = extractMinorOrder(a.minor);
+    const numB = extractMinorOrder(b.minor);
+    if (numA !== numB) {
+      return numA - numB;
+    }
+
+    return a.id - b.id;
+  }
+
+  /**
    * 抽選ロジック
    * - 1個引き: 対象プールからランダムに1件
    * - 5個引き: 可能な限り「小分類」が重複しないように最大5件抽出し、
-   *            CSVの行順（CATO準拠の番号順）で並べて返却
+   *            小分類のCATO番号順およびCSVの行順で並べて返却
    */
   function drawFromPool(pool, count) {
     if (pool.length === 0) {
@@ -254,7 +285,7 @@
     }
 
     if (pool.length <= count) {
-      return pool.slice().sort((a, b) => a.id - b.id);
+      return pool.slice().sort(compareItemsForDisplay);
     }
 
     const groups = new Map();
@@ -290,8 +321,8 @@
       }
     }
 
-    // CSVの上から順（大分類・小分類のCATO番号順）に並べる
-    return picked.sort((a, b) => a.id - b.id);
+    // 大分類・小分類のCATO番号順およびCSVの上から順に並べる
+    return picked.sort(compareItemsForDisplay);
   }
 
   /* ========================================================================
