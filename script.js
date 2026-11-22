@@ -7,12 +7,26 @@
 
   const CSV_PATH = './data.csv';
 
-  // 大分類ごとの識別カラー（隣り合う領域の色差が大きくなる順序で配置）
+  // 主要なOSCE大分類の固定カラー割り当て（順序が変わっても同じ領域は同じ色を維持）
+  const NAMED_CATEGORY_COLORS = {
+    '腹部': { bg: '#eef4fc', fg: '#144d9e', dot: '#1d66cf' }, // ブルー
+    '神経': { bg: '#fcf3e6', fg: '#8c4b06', dot: '#c97110' }, // アンバー
+    '四肢・脊柱': { bg: '#e9f6f2', fg: '#0d5c47', dot: '#158568' }, // ティールグリーン
+    '胸部': { bg: '#fbeef2', fg: '#992448', dot: '#cc3f6b' }, // ローズ
+    '頭頸部': { bg: '#f4eefb', fg: '#5c288c', dot: '#7e42b8' }, // パープル
+    '全身・バイタル': { bg: '#ebf5fa', fg: '#0c5e7d', dot: '#1685b5' }, // スカイ
+    'バイタルサイン': { bg: '#ebf5fa', fg: '#0c5e7d', dot: '#1685b5' }, // スカイ
+    '救急': { bg: '#fbf0ea', fg: '#943a14', dot: '#cc5b2b' }, // コーラル
+    '基本的臨床手技': { bg: '#edf6ee', fg: '#1d6629', dot: '#2f8f3f' }, // グリーン
+    '医療面接': { bg: '#eff3f7', fg: '#32485e', dot: '#516c8a' }, // スレート
+  };
+
+  // 未定義の大分類が追加された場合のフォールバック用パレット
   const CATEGORY_PALETTE = [
-    { bg: '#eef4fc', fg: '#144d9e', dot: '#1d66cf' }, // 1. ブルー（腹部など）
-    { bg: '#fcf3e6', fg: '#8c4b06', dot: '#c97110' }, // 2. アンバー（神経など）
-    { bg: '#eaf6f3', fg: '#0d6659', dot: '#148f7d' }, // 3. ティール
-    { bg: '#f5eefb', fg: '#682c91', dot: '#8e44bf' }, // 4. パープル
+    { bg: '#eef4fc', fg: '#144d9e', dot: '#1d66cf' }, // 1. ブルー
+    { bg: '#fcf3e6', fg: '#8c4b06', dot: '#c97110' }, // 2. アンバー
+    { bg: '#e9f6f2', fg: '#0d5c47', dot: '#158568' }, // 3. ティールグリーン
+    { bg: '#f4eefb', fg: '#5c288c', dot: '#7e42b8' }, // 4. パープル
     { bg: '#fbeef2', fg: '#992448', dot: '#cc3f6b' }, // 5. ローズ
     { bg: '#edf6ee', fg: '#1d6629', dot: '#2f8f3f' }, // 6. グリーン
     { bg: '#ebf5fa', fg: '#0c5e7d', dot: '#1685b5' }, // 7. スカイ
@@ -174,7 +188,10 @@
      カテゴリ色・表示用ヘルパー
      ======================================================================== */
 
-  function getCategoryColor(index) {
+  function getCategoryColor(categoryName, index) {
+    if (NAMED_CATEGORY_COLORS[categoryName]) {
+      return NAMED_CATEGORY_COLORS[categoryName];
+    }
     if (index < CATEGORY_PALETTE.length) {
       return CATEGORY_PALETTE[index];
     }
@@ -714,7 +731,7 @@
     bindEvents();
 
     try {
-      const response = await fetch(CSV_PATH, { cache: 'no-cache' });
+      const response = await fetch(`${CSV_PATH}?t=${Date.now()}`, { cache: 'no-store' });
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
@@ -734,7 +751,7 @@
       }
       state.categories = Array.from(categorySet);
       state.categories.forEach((cat, idx) => {
-        state.categoryColors.set(cat, getCategoryColor(idx));
+        state.categoryColors.set(cat, getCategoryColor(cat, idx));
       });
 
       updateUI();
