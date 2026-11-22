@@ -7,18 +7,18 @@
 
   const CSV_PATH = './data.csv';
 
-  // 大分類ごとの識別カラー（淡い背景・高コントラスト文字・ドット色）
+  // 大分類ごとの識別カラー（隣り合う領域の色差が大きくなる順序で配置）
   const CATEGORY_PALETTE = [
-    { bg: '#eef4fc', fg: '#144d9e', dot: '#1d66cf' }, // ブルー
-    { bg: '#f2effc', fg: '#4f309e', dot: '#6e4ec9' }, // インディゴ
-    { bg: '#eaf6f3', fg: '#0d6659', dot: '#148f7d' }, // ティール
-    { bg: '#fcf4e8', fg: '#8f4f08', dot: '#cc7a16' }, // アンバー
-    { bg: '#fbeef2', fg: '#992448', dot: '#cc3f6b' }, // ローズ
-    { bg: '#ebf5fa', fg: '#0c5e7d', dot: '#1685b5' }, // スカイ
-    { bg: '#edf6ee', fg: '#1d6629', dot: '#2f8f3f' }, // グリーン
-    { bg: '#f6eef9', fg: '#71288c', dot: '#9b44bd' }, // パープル
-    { bg: '#fbf0ea', fg: '#943a14', dot: '#cc5b2b' }, // コーラル
-    { bg: '#eff3f7', fg: '#32485e', dot: '#516c8a' }, // スレート
+    { bg: '#eef4fc', fg: '#144d9e', dot: '#1d66cf' }, // 1. ブルー（腹部など）
+    { bg: '#fcf3e6', fg: '#8c4b06', dot: '#c97110' }, // 2. アンバー（神経など）
+    { bg: '#eaf6f3', fg: '#0d6659', dot: '#148f7d' }, // 3. ティール
+    { bg: '#f5eefb', fg: '#682c91', dot: '#8e44bf' }, // 4. パープル
+    { bg: '#fbeef2', fg: '#992448', dot: '#cc3f6b' }, // 5. ローズ
+    { bg: '#edf6ee', fg: '#1d6629', dot: '#2f8f3f' }, // 6. グリーン
+    { bg: '#ebf5fa', fg: '#0c5e7d', dot: '#1685b5' }, // 7. スカイ
+    { bg: '#fbf0ea', fg: '#943a14', dot: '#cc5b2b' }, // 8. コーラル
+    { bg: '#f0effc', fg: '#48309e', dot: '#664ec9' }, // 9. インディゴ
+    { bg: '#eff3f7', fg: '#32485e', dot: '#516c8a' }, // 10. スレート
   ];
 
   /* ========================================================================
@@ -240,7 +240,8 @@
   /**
    * 抽選ロジック
    * - 1個引き: 対象プールからランダムに1件
-   * - 5個引き: 可能な限り「小分類」が重複しないように最大5件抽出
+   * - 5個引き: 可能な限り「小分類」が重複しないように最大5件抽出し、
+   *            CSVの行順（CATO準拠の番号順）で並べて返却
    */
   function drawFromPool(pool, count) {
     if (pool.length === 0) {
@@ -253,12 +254,14 @@
     }
 
     if (pool.length <= count) {
-      return shuffleArray(pool);
+      return pool.slice().sort((a, b) => a.id - b.id);
     }
 
     const groups = new Map();
     for (const entry of pool) {
-      const groupKey = entry.minor || `__single_${entry.id}`;
+      const groupKey = entry.minor
+        ? `${entry.major}\0${entry.minor}`
+        : `__single_${entry.id}`;
       if (!groups.has(groupKey)) {
         groups.set(groupKey, []);
       }
@@ -287,7 +290,8 @@
       }
     }
 
-    return shuffleArray(picked);
+    // CSVの上から順（大分類・小分類のCATO番号順）に並べる
+    return picked.sort((a, b) => a.id - b.id);
   }
 
   /* ========================================================================
@@ -456,6 +460,21 @@
     return svg;
   }
 
+  function renderChecklistLines(container, checklistText) {
+    const lines = checklistText.split('\n');
+    for (const line of lines) {
+      const p = document.createElement('p');
+      p.className = 'cl-line';
+      if (/^[□・]/.test(line)) {
+        p.classList.add('cl-line--item');
+      } else if (/^[（(]注[）)]/.test(line)) {
+        p.classList.add('cl-line--note');
+      }
+      p.textContent = line;
+      container.appendChild(p);
+    }
+  }
+
   function createResultItem(entry, index, totalCount) {
     const article = document.createElement('article');
     article.className = 'result-item';
@@ -523,7 +542,7 @@
 
       const content = document.createElement('div');
       content.className = 'checklist-content';
-      content.textContent = entry.checklist;
+      renderChecklistLines(content, entry.checklist);
 
       panelInner.appendChild(content);
       panel.appendChild(panelInner);

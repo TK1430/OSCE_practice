@@ -217,9 +217,9 @@ input:focus-visible {
 }
 
 .filter-item--all.is-active {
-  background-color: var(--primary-soft);
-  border-bottom-color: var(--primary);
-  color: var(--primary);
+  background-color: #f0f3f7;
+  border-bottom-color: var(--text-primary);
+  color: var(--text-primary);
 }
 
 /* オプション行（除外トグル + リセット） */
@@ -617,10 +617,29 @@ input:focus-visible {
   padding: 2px 0 2px 14px;
   border-left: 2px solid var(--line-strong);
   font-size: 0.9rem;
-  line-height: 1.8;
+  line-height: 1.75;
   color: var(--text-primary);
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+.cl-line {
+  margin: 0 0 0.3em;
+}
+
+.cl-line:last-child {
+  margin-bottom: 0;
+}
+
+.cl-line--item {
+  padding-left: 1.3em;
+  text-indent: -1.3em;
+}
+
+.cl-line--note {
+  margin-top: 0.4em;
+  font-size: 0.85em;
+  color: var(--text-secondary);
 }
 
 /* ==========================================================================
