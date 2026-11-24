@@ -54,7 +54,8 @@ button {
 }
 
 button:focus-visible,
-input:focus-visible {
+input:focus-visible,
+select:focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
@@ -317,18 +318,19 @@ input:focus-visible {
 /* 抽選ボタン */
 .draw-actions {
   display: grid;
-  grid-template-columns: 1fr 1.3fr;
+  grid-template-columns: minmax(88px, 0.85fr) minmax(0, 1.65fr);
   gap: 10px;
 }
 
 .draw-btn {
   min-height: 46px;
-  padding: 10px 14px;
+  padding: 10px 12px;
   border: none;
   border-radius: 3px;
   font-size: 0.94rem;
   font-weight: 700;
   letter-spacing: 0.01em;
+  white-space: nowrap;
   transition: background-color 0.14s ease, opacity 0.14s ease;
 }
 
@@ -346,7 +348,64 @@ input:focus-visible {
   background-color: var(--primary-soft-hover);
 }
 
+.draw-multi-group {
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.draw-count-select {
+  appearance: none;
+  -webkit-appearance: none;
+  flex-shrink: 0;
+  width: 58px;
+  min-height: 46px;
+  padding: 0 22px 0 10px;
+  border: none;
+  border-right: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 0;
+  background-color: #124ba0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 0.94rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color 0.14s ease, opacity 0.14s ease;
+}
+
+.draw-count-select:hover:not(:disabled) {
+  background-color: #0e3f8a;
+}
+
+.draw-count-select:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.draw-count-select:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: -3px;
+}
+
+.draw-count-select option {
+  background-color: #ffffff;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
 .draw-btn--multi {
+  flex: 1;
+  min-width: 0;
+  border-radius: 0;
+  padding: 10px 10px;
   background-color: var(--primary);
   color: #ffffff;
 }
@@ -357,6 +416,11 @@ input:focus-visible {
 
 .draw-btn--multi:active:not(:disabled) {
   background-color: var(--primary-active);
+}
+
+.draw-btn--multi:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: -3px;
 }
 
 /* セクション区切り線 */

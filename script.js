@@ -61,7 +61,8 @@
     resetBtn: document.getElementById('reset-btn'),
     resetBtnLabel: document.getElementById('reset-btn-label'),
     drawOneBtn: document.getElementById('draw-one-btn'),
-    drawFiveBtn: document.getElementById('draw-five-btn'),
+    drawCountSelect: document.getElementById('draw-count-select'),
+    drawMultiBtn: document.getElementById('draw-multi-btn'),
     noticeBanner: document.getElementById('notice-banner'),
     noticeText: document.getElementById('notice-text'),
     noticeResetBtn: document.getElementById('notice-reset-btn'),
@@ -288,8 +289,10 @@
   /**
    * 抽選ロジック
    * - 1個引き: 対象プールからランダムに1件
-   * - 5個引き: 可能な限り「小分類」が重複しないように最大5件抽出し、
-   *            小分類のCATO番号順およびCSVの行順で並べて返却
+   * - N個引き（5 / 8 / 10）:
+   *   1) 対象総数がN未満の場合は、存在する全項目をランダム順で返却
+   *   2) 小分類が重複しないように優先して抽出し、不足分を残りの未選択項目から
+   *      ランダムに補充（同一項目の重複なし）したうえで小分類順に整列
    */
   function drawFromPool(pool, count) {
     if (pool.length === 0) {
@@ -301,8 +304,8 @@
       return [pool[randomIndex]];
     }
 
-    if (pool.length <= count) {
-      return pool.slice().sort(compareItemsForDisplay);
+    if (pool.length < count) {
+      return shuffleArray(pool);
     }
 
     const groups = new Map();
@@ -469,16 +472,11 @@
     dom.resetBtnLabel.textContent =
       drawnTotal > 0 ? `出題済みをリセット (${drawnTotal})` : '出題済みをリセット';
 
-    // 抽選ボタンの活性制御
+    // 抽選ボタン・回数プルダウンの活性制御
     const canDraw = !state.isSpinning && available.length > 0;
     dom.drawOneBtn.disabled = !canDraw;
-    dom.drawFiveBtn.disabled = !canDraw;
-
-    if (available.length > 0 && available.length < 5) {
-      dom.drawFiveBtn.textContent = `残り${available.length}件をまとめて引く`;
-    } else {
-      dom.drawFiveBtn.textContent = '5個まとめて引く';
-    }
+    dom.drawMultiBtn.disabled = !canDraw;
+    dom.drawCountSelect.disabled = state.isSpinning;
 
     // 全件出切り時の通知制御
     if (filtered.length > 0 && available.length === 0 && state.excludeDrawn) {
@@ -716,7 +714,10 @@
 
   function bindEvents() {
     dom.drawOneBtn.addEventListener('click', () => runGacha(1));
-    dom.drawFiveBtn.addEventListener('click', () => runGacha(5));
+    dom.drawMultiBtn.addEventListener('click', () => {
+      const count = Number.parseInt(dom.drawCountSelect.value, 10) || 5;
+      runGacha(count);
+    });
 
     dom.excludeToggle.addEventListener('change', (event) => {
       state.excludeDrawn = event.target.checked;
@@ -760,7 +761,8 @@
       dom.remainingBadge.textContent = '読込エラー';
       dom.remainingBadge.classList.add('is-empty');
       dom.drawOneBtn.disabled = true;
-      dom.drawFiveBtn.disabled = true;
+      dom.drawMultiBtn.disabled = true;
+      dom.drawCountSelect.disabled = true;
       dom.excludeToggle.disabled = true;
       dom.emptyState.hidden = true;
 

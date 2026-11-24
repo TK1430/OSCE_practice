@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>身体診察ガチャ</title>
-  <link rel="stylesheet" href="./style.css?v=4">
+  <link rel="stylesheet" href="./style.css?v=5">
 </head>
 <body>
   <div class="app-shell">
@@ -48,9 +48,16 @@
           <button type="button" id="draw-one-btn" class="draw-btn draw-btn--single" disabled>
             1個引く
           </button>
-          <button type="button" id="draw-five-btn" class="draw-btn draw-btn--multi" disabled>
-            5個まとめて引く
-          </button>
+          <div class="draw-multi-group">
+            <select id="draw-count-select" class="draw-count-select" aria-label="まとめて引く個数" disabled>
+              <option value="5" selected>5</option>
+              <option value="8">8</option>
+              <option value="10">10</option>
+            </select>
+            <button type="button" id="draw-multi-btn" class="draw-btn draw-btn--multi" disabled>
+              個まとめて引く
+            </button>
+          </div>
         </div>
       </section>
 
@@ -94,6 +101,6 @@
     </main>
   </div>
 
-  <script src="./script.js?v=4"></script>
+  <script src="./script.js?v=5"></script>
 </body>
 </html>
