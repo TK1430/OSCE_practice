@@ -14,11 +14,12 @@
     '四肢・脊柱': { bg: '#e9f6f2', fg: '#0d5c47', dot: '#158568' }, // ティールグリーン
     '胸部': { bg: '#fbeef2', fg: '#992448', dot: '#cc3f6b' }, // ローズ
     '頭頸部': { bg: '#f4eefb', fg: '#5c288c', dot: '#7e42b8' }, // パープル
-    '全身・バイタル': { bg: '#ebf5fa', fg: '#0c5e7d', dot: '#1685b5' }, // スカイ
-    'バイタルサイン': { bg: '#ebf5fa', fg: '#0c5e7d', dot: '#1685b5' }, // スカイ
+    '全身状態とバイタルサイン': { bg: '#eef2f6', fg: '#2e4257', dot: '#4c647d' }, // スレート
+    '全身・バイタル': { bg: '#eef2f6', fg: '#2e4257', dot: '#4c647d' }, // スレート
+    'バイタルサイン': { bg: '#eef2f6', fg: '#2e4257', dot: '#4c647d' }, // スレート
     '救急': { bg: '#fbf0ea', fg: '#943a14', dot: '#cc5b2b' }, // コーラル
     '基本的臨床手技': { bg: '#edf6ee', fg: '#1d6629', dot: '#2f8f3f' }, // グリーン
-    '医療面接': { bg: '#eff3f7', fg: '#32485e', dot: '#516c8a' }, // スレート
+    '医療面接': { bg: '#ebf5fa', fg: '#0c5e7d', dot: '#1685b5' }, // スカイ
   };
 
   // 未定義の大分類が追加された場合のフォールバック用パレット
@@ -279,7 +280,7 @@
 
     const numA = extractMinorOrder(a.minor);
     const numB = extractMinorOrder(b.minor);
-    if (numA !== numB) {
+    if (Number.isFinite(numA) && Number.isFinite(numB) && numA !== numB) {
       return numA - numB;
     }
 
@@ -509,6 +510,7 @@
   function renderChecklistLines(container, checklistText) {
     const lines = checklistText.split('\n');
     for (const line of lines) {
+      if (line.trim() === '') continue;
       const p = document.createElement('p');
       p.className = 'cl-line';
       if (/^[□・]/.test(line)) {
