@@ -45,7 +45,7 @@
     categories: [],
     categoryColors: new Map(),
     selectedCategories: new Set(), // 空の場合は「すべて」
-    excludeDrawn: false,
+    excludeDrawn: true,
     drawnIds: new Set(),
     isSpinning: false,
     hasLoadError: false,
